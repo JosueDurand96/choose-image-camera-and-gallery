@@ -38,32 +38,34 @@ import java.io.File
 
 class MainActivity : AppCompatActivity() {
 
-    private var filePhoto: File? = null
-
     companion object {
-        private val IMAGE_CHOOSE = 1000;
         private val PERMISSION_CODE = 1001;
-        private const val FILE_NAME = "photo.jpg"
     }
 
-    private val TAKE_PHOTO_REQUEST = 101
-    private var mCurrentPhotoPath: String = ""
-    lateinit var imageView: ImageView
-    lateinit var button: Button
+
     private val pickImage = 100
     private var imageUri: Uri? = null
 
-    val REQUEST_CODE = 200
+    private val REQUEST_CODE = 200
 
-
+    private var mImageView: ImageView? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-
+        mImageView = findViewById(R.id.mImageView)
 
         btnCapture.setOnClickListener {
-            capturePhoto()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_DENIED) {
+                    val permissions = arrayOf(Manifest.permission.CAMERA)
+                    requestPermissions(permissions, PERMISSION_CODE)
+                } else {
+                    capturePhoto()
+                }
+            } else {
+                capturePhoto()
+            }
         }
 
 
@@ -88,66 +90,19 @@ class MainActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-//        if (resultCode == RESULT_OK && requestCode == pickImage) {
-//            imageUri = data?.data
-//            mImageView.setImageURI(imageUri)
-//        } else
-        if (resultCode == Activity.RESULT_OK && requestCode == REQUEST_CODE && data != null){
-            mImageView.setImageBitmap(data.extras!!.get("data") as Bitmap)
+        if (resultCode == RESULT_OK && requestCode == pickImage) {
+            imageUri = data?.data
+            mImageView!!.setImageURI(imageUri)
+        }
+        if (resultCode == Activity.RESULT_OK && requestCode == REQUEST_CODE && data != null) {
+            mImageView!!.setImageBitmap(data.extras!!.get("data") as Bitmap)
         }
     }
 
-    fun capturePhoto() {
-
+    private fun capturePhoto() {
         val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
         startActivityForResult(cameraIntent, REQUEST_CODE)
     }
-
-
-    private fun launchCamera() {
-        val values = ContentValues(1)
-        values.put(MediaStore.Images.Media.MIME_TYPE, "image/*")
-        val fileUri = contentResolver
-            .insert(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                values
-            )
-        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        if (intent.resolveActivity(packageManager) != null) {
-            mCurrentPhotoPath = fileUri.toString()
-            intent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri)
-            intent.addFlags(
-                Intent.FLAG_GRANT_READ_URI_PERMISSION
-                        or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            )
-            startActivityForResult(intent, TAKE_PHOTO_REQUEST)
-        }
-    }
-
-//    private fun processCapturedPhoto() {
-//        val cursor = contentResolver.query(
-//            Uri.parse(mCurrentPhotoPath),
-//            Array(1) { android.provider.MediaStore.Images.ImageColumns.DATA },
-//            null, null, null
-//        )
-//        cursor!!.moveToFirst()
-//        val photoPath = cursor.getString(0)
-//        cursor.close()
-//        val file = File(photoPath)
-//        val uri = Uri.fromFile(file)
-//
-//        val height = resources.getDimensionPixelSize(R.dimen.photo_height)
-//        val width = resources.getDimensionPixelSize(R.dimen.photo_width)
-//
-//        val request = ImageRequestBuilder.newBuilderWithSource(uri)
-//            .setResizeOptions(ResizeOptions(width, height))
-//            .build()
-//        val controller = Fresco.newDraweeControllerBuilder()
-//            .setOldController(mImageView?.controller)
-//            .setImageRequest(request)
-//            .build()
-//        mImageView?.controller = controller
-//    }
 
 
 }
